@@ -36,6 +36,7 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 400px;
+            word-wrap: break-word; /* Ensure long titles break into a new line */
         }
 
         .form-title {
@@ -43,6 +44,7 @@
             margin-bottom: 20px;
             font-size: 1.5em;
             font-weight: bold;
+            word-wrap: break-word; /* Ensures long titles wrap to a new line */
         }
 
         .agent-info {
@@ -82,6 +84,7 @@
         label {
             margin-bottom: 5px;
             font-weight: bold;
+		color: #5C5C5C;
         }
 
         input[type="text"],
@@ -121,7 +124,7 @@
         .checkbox-container label {
             font-weight: normal;
             font-size: 0.9em;
-            color: #555;
+            color: #5c5c5c;
         }
 
         .privacy-note {
@@ -145,6 +148,12 @@
         .thank-you-screen h2 {
             margin-bottom: 20px;
             color: var(--primary-color);
+        }
+
+        .submission-id {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 20px;
         }
 
         .reten-crm-info {
@@ -171,7 +180,7 @@
 <body>
     <div class="container">
         <div class="form-wrapper" id="formWrapper">
-            <div class="form-title">20 Park Cres, Amherstview</div>
+            <div class="form-title" id="propertyAddress">20 Park Cres, Amherstview</div>
             <div class="agent-info">
                 <img src="https://raw.githubusercontent.com/RetenCRM/QR-Code-Form/refs/heads/main/WhatsApp%20Image%202024-03-24%20at%2008.11.03_7fa058a1.jpg" alt="Agent Photo" class="agent-photo">
                 <div class="agent-details">
@@ -204,7 +213,8 @@
         <div class="thank-you-screen" id="thankYouScreen">
             <h2>Thank You!</h2>
             <p>Your information has been submitted successfully.</p>
-            <p>We'll be in touch soon with updates about 20 Park Cres, Amherstview.</p>
+            <p>We'll be in touch soon with updates about this property.</p>
+            <p class="submission-id" id="submissionId">Submission ID: </p> <!-- Display Submission ID here -->
         </div>
     </div>
 
@@ -218,6 +228,15 @@
             return null;
         }
 
+        function generateUniqueFormId() {
+            return 'Form-' + Math.floor(Math.random() * 1000000);
+        }
+
+        function getCurrentDateTime() {
+            const now = new Date();
+            return now.toISOString(); // Format date as ISO string
+        }
+
         document.getElementById('phone').addEventListener('input', function (e) {
             const formattedNumber = formatPhoneNumber(e.target.value);
             if (formattedNumber) {
@@ -226,8 +245,6 @@
         });
 
         async function validateEmail(email) {
-            // This is a placeholder for email validation
-            // In a real-world scenario, you would use an email validation service API
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
 
@@ -238,6 +255,9 @@
             const email = document.getElementById('email').value;
             const phone = document.getElementById('phone').value;
             const consent = document.getElementById('consent').checked;
+            const submissionId = generateUniqueFormId(); // Generate unique submission ID
+            const submissionTime = getCurrentDateTime(); // Get submission date and time
+            const propertyAddress = document.getElementById('propertyAddress').textContent; // Get property address
 
             let isValid = true;
 
@@ -261,13 +281,37 @@
                 return;
             }
 
-            // Here you would typically send the form data to your server
-            console.log('Form submitted:', {
+            // Send form data to Make.com webhook
+            const webhookUrl = 'https://hook.us2.make.com/byokgs5o5aeusf5euzcerhl45ecic6o3'; // Replace with your actual Make.com webhook URL
+            const formData = {
                 name: name,
                 email: email,
                 phone: phone,
-                consent: consent
-            });
+                consent: consent,
+                submissionId: submissionId,
+                submissionTime: submissionTime,
+                propertyAddress: propertyAddress // Add property address to data sent to webhook
+            };
+
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                if (response.ok) {
+                    console.log('Data successfully sent to webhook');
+                } else {
+                    console.error('Error sending data to webhook');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+
+            // Display submission ID in thank you page
+            document.getElementById('submissionId').textContent = 'Submission ID: ' + submissionId;
 
             // Show thank you screen
             document.getElementById('formWrapper').style.display = 'none';
