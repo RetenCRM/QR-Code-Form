@@ -254,7 +254,12 @@
 
         document.getElementById('leadForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
+	// Disable the submit button and show a loading message
+   		 const submitButton = document.querySelector('button[type="submit"]');
+  	  submitButton.disabled = true;
+ 	   submitButton.textContent = "Submitting...";
+		
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const phone = document.getElementById('phone').value;
@@ -282,7 +287,10 @@
             }
 
             if (!name || !email || !phone || !consent || !isValid) {
-                return;
+                // Re-enable the submit button and revert text if validation fails
+       		 submitButton.disabled = false;
+      		  submitButton.textContent = "Submit";
+		    return;
             }
 
             // Send form data to Make.com webhook
